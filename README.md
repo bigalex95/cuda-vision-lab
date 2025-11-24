@@ -28,25 +28,34 @@ _Recommended for debugging and visual verification of kernels._
 
 1. **Install Dependencies** (Ubuntu 22.04):
 
-   ```
+   ```bash
    chmod +x scripts/install_deps.sh
    ./scripts/install_deps.sh
    ```
 
-2. **Build:**
+2. **Verify Installation** (Test CUDA + OpenCV Setup):
 
+   Run the benchmark suite to verify your environment is configured correctly:
+
+   ```bash
+   ./scripts/build.sh
+   ./scripts/run.sh benchmark
    ```
-   mkdir build && cd build
-   cmake ..
-   make -j$(nproc)
+
+   You should see GPU-accelerated array operations with speedup metrics. If this works, your CUDA toolkit, compiler, and OpenCV are properly installed.
+
+3. **Build Specific Modules:**
+
+   ```bash
+   ./scripts/build.sh              # Build all modules
+   ./scripts/build.sh benchmark    # Build only benchmark module
    ```
 
-3. Run Visualization:
+4. **Run Modules:**
 
-   This will open an OpenCV window showing the input vs. CUDA output.
-
-   ```
-   ./bin/01_pixel_ops_gui  # Example for Phase 1
+   ```bash
+   ./scripts/run.sh benchmark        # Run CPU vs GPU benchmarks
+   ./scripts/run.sh pixel_ops_gui    # Run with visualization (future)
    ```
 
 ### Option B: Docker (Terminal Benchmarking)
