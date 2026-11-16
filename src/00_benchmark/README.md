@@ -46,24 +46,14 @@ This module provides a comprehensive benchmarking suite for comparing CPU and GP
 ## Build & Run
 
 ```bash
-# From project root
-mkdir -p build && cd build
-cmake ..
-make benchmark
-
-# Run the benchmark suite
-./bin/benchmark
+# From the repository root
+./scripts/build.sh benchmark
+./scripts/run.sh benchmark
 ```
 
-## Expected Results
+## Results
 
-Typical speedup factors on modern GPUs:
-
-- **Simple operations** (add, multiply, scale): 50-100x
-- **Reduction operations** (dot product): 30-80x
-- **Complex operations** (normalization): 20-50x
-
-Performance scales with array size, with larger arrays showing better GPU utilization.
+Measured results (RTX 3060 Laptop GPU, kernel-only timing) are in the [root README](../../README.md#stage-00-results).
 
 ## Usage as Template
 
