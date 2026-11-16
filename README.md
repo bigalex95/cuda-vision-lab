@@ -1,94 +1,74 @@
-# CuVO-Kernels: High-Performance CUDA Visual Odometry
+# cuda-vision-lab
 
-**CuVO-Kernels** is a performance-oriented study of standard Computer Vision algorithms implemented from scratch in CUDA C++. The project aims to benchmark and optimize the "Frontend" of a SLAM system (Feature Extraction, Matching, and Tracking) by leveraging GPU hardware architecture.
+A work-in-progress learning lab for CUDA kernels aimed at the front end of a visual SLAM/VO pipeline (the CMake project is named CuVO-Kernels). **Only stage 00, a CPU vs GPU array-operation benchmark, is implemented.** Stages 01-06 are placeholder directories.
 
-## 🚀 Project Roadmap & Benchmarks
+## Status
 
-|           |                          |                                       |                      |
-| --------- | ------------------------ | ------------------------------------- | -------------------- |
-| **Phase** | **Algorithm**            | **CUDA Optimization Technique**       | **Speedup (vs CPU)** |
-| **01**    | Grayscale & Thresholding | Global Memory Coalescing              | _Pending_            |
-| **02**    | Gaussian Blur            | Shared Memory Tiling & Halo Handling  | _Pending_            |
-| **03**    | Histogram Calculation    | Atomic Operations & Local Reductions  | _Pending_            |
-| **04**    | Harris Corner Detector   | CUDA Streams & Asynchronous Execution | _Pending_            |
-| **05**    | BRIEF/ORB Matcher        | Warp Intrinsics (`__popc`, `__shfl`)  | _Pending_            |
-| **06**    | Visual Odometry Pipeline | End-to-End Frame Tracking             | _Pending_            |
+| Stage | Directory | Content | Status |
+| --- | --- | --- | --- |
+| 00 | `src/00_benchmark` | CPU vs GPU array ops (add, multiply, scale, dot product, normalize) with CUDA-event timing and correctness check | done |
+| 01 | `src/01_pixel_ops` | Grayscale and thresholding | planned |
+| 02 | `src/02_convolution` | Gaussian blur (shared-memory tiling) | planned |
+| 03 | `src/03_histogram` | Histogram (atomics, local reductions) | planned |
+| 04 | `src/04_features` | Harris corner detector (CUDA streams) | planned |
+| 05 | `src/05_matching` | BRIEF/ORB matcher (warp intrinsics) | planned |
+| 06 | `src/06_visual_odom` | Frame-to-frame visual odometry on KITTI | planned |
 
-## 🛠️ Architecture
+No computer-vision kernel exists yet, so nothing here is compared against OpenCV so far. Planned stages will be added only with measured results and correctness checks.
 
-- **src/**: Contains isolated modules for each algorithmic stage.
-- **common/**: Shared utilities for precise benchmarking.
-- **data/**: Scripts and placeholders for the [KITTI Odometry Dataset](https://www.cvlibs.net/datasets/kitti/eval_odometry.php "null").
+## Stage 00 results
 
-## ⚙️ Installation & Usage
+Measured on an NVIDIA GeForce RTX 3060 Laptop GPU (compute capability 8.6, CUDA 12.6) with an AMD Ryzen 7 5800H CPU, single-threaded CPU reference in plain C++ (`-O3`), 100 iterations. GPU time is kernel-only via CUDA events on data already resident on the device (host/device transfers are not included). Single run; the speedups for the 1M-element case varied between runs (for example array addition 4.0x and 7.6x), so treat the numbers as indicative.
 
-### Option A: Local Development (GUI & Visualization)
+| Operation (50M floats) | CPU | GPU | Speedup |
+| --- | --- | --- | --- |
+| Array addition | 39.8 ms | 1.88 ms | 21.2x |
+| Array multiplication | 26.1 ms | 1.88 ms | 13.9x |
+| Scalar multiplication | 19.0 ms | 1.26 ms | 15.1x |
+| Dot product | 38.2 ms | 3.01 ms | 12.7x |
+| Normalization | 69.0 ms | 4.34 ms | 15.9x |
 
-_Recommended for debugging and visual verification of kernels._
+Speedups across sizes in the same run:
 
-1. **Install Dependencies** (Ubuntu 22.04):
+| Operation | 1M | 10M | 50M |
+| --- | --- | --- | --- |
+| Array addition | 7.6x | 14.0x | 21.2x |
+| Array multiplication | 4.2x | 14.1x | 13.9x |
+| Scalar multiplication | 3.2x | 16.5x | 15.1x |
+| Dot product | 3.5x | 10.0x | 12.7x |
+| Normalization | 4.6x | 14.6x | 15.9x |
 
-   ```bash
-   chmod +x scripts/install_deps.sh
-   ./scripts/install_deps.sh
-   ```
+These are memory-bound operations, so they say little about vision kernels; they validate the harness and the toolchain.
 
-2. **Verify Installation** (Test CUDA + OpenCV Setup):
+## Build and run
 
-   Run the benchmark suite to verify your environment is configured correctly:
+Prerequisites: CUDA toolkit (built here with 12.6), CMake 3.18+, OpenCV (found by CMake; used by the common utilities), an NVIDIA GPU. `scripts/install_deps.sh` installs dependencies on Ubuntu 22.04.
 
-   ```bash
-   ./scripts/build.sh
-   ./scripts/run.sh benchmark
-   ```
-
-   You should see GPU-accelerated array operations with speedup metrics. If this works, your CUDA toolkit, compiler, and OpenCV are properly installed.
-
-3. **Build Specific Modules:**
-
-   ```bash
-   ./scripts/build.sh              # Build all modules
-   ./scripts/build.sh benchmark    # Build only benchmark module
-   ```
-
-4. **Run Modules:**
-
-   ```bash
-   ./scripts/run.sh benchmark        # Run CPU vs GPU benchmarks
-   ./scripts/run.sh pixel_ops_gui    # Run with visualization (future)
-   ```
-
-### Option B: Docker (Terminal Benchmarking)
-
-_Recommended for clean performance testing and portfolio demonstration._
-
-1. **Build Image:**
-
-   ```
-   docker build -t cuda-vision-lab .
-   ```
-
-2. Run Benchmarks:
-
-   This runs the performance suite without any GUI dependencies.
-
-   ```
-   docker run --gpus all cuda-vision-lab
-   ```
-
-## 📊 Performance Analysis Methodology
-
-Each module includes a `benchmark` target that runs the algorithm on a standard image sequence (KITTI) 100 times to average the execution metrics.
-
-```
-// Example Metric Output
-[Gaussian Blur 5x5]
-CPU Time (OpenCV): 12.5 ms
-GPU Time (Global):  3.2 ms
-GPU Time (Shared):  0.8 ms
-Speedup: 15.6x
+```bash
+./scripts/build.sh benchmark     # cmake + make
+./scripts/run.sh benchmark       # runs build/bin/benchmark
 ```
 
-## 👤 Author
+The default `CMAKE_CUDA_ARCHITECTURES` list is `52 60 61 70 75 80 86`; pass `-DCMAKE_CUDA_ARCHITECTURES=<arch>` for your GPU. On the machine above, `cuda_runtime.h` was not found by the C++ compiler until the CUDA include directory was added, so the numbers were produced with:
 
-**Alibek Erkabayev (bigalex95)** _Computer Vision & Machine Learning Engineer_ Specializing in High-Performance Computing and Embedded Vision.
+```bash
+cmake -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_CXX_FLAGS="-I/usr/local/cuda-12.6/include"
+cmake --build build --target benchmark -j && ./build/bin/benchmark
+```
+
+Docker: `docker build -t cuda-vision-lab .` then `docker run --gpus all cuda-vision-lab` (not re-tested here).
+
+## Project structure
+
+```
+common/        benchmark and visualization helpers (docs/COMMON_UTILS.md)
+src/00_benchmark/   array-op benchmark (CPU + CUDA)
+src/01..06_*/       empty placeholders for planned stages
+scripts/       build.sh, run.sh, install_deps.sh
+docs/          COMMON_UTILS.md
+Dockerfile
+```
+
+## Author
+
+Alibek Erkabayev (bigalex95). See [LICENSE](LICENSE).
